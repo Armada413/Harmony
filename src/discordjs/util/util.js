@@ -1,0 +1,39 @@
+import { Client } from "discord.js";
+
+/**
+ * @param {Client} client
+ */
+const yesOrNoButtons = async (client) => {
+  // Filter members who has the "Collaborator" role into an array of id's
+  const guildCollection = await guild.members.fetch();
+  const collaborators = guildCollection
+    .filter((member) =>
+      member.roles.cache.some((role) => role.name === "Collaborator")
+    )
+    .map((member) => member.id);
+
+  // Send initial jury request
+  const yesButton = new ButtonBuilder()
+    .setCustomId("yes")
+    .setLabel("Yes")
+    .setStyle(ButtonStyle.Success);
+
+  const noButton = new ButtonBuilder()
+    .setCustomId("no")
+    .setLabel("No")
+    .setStyle(ButtonStyle.Danger);
+  const row = new ActionRowBuilder().addComponents(yesButton, noButton);
+
+  for (const singleCollaborator of collaborators) {
+    const user = await client.users.fetch(singleCollaborator);
+    await user.send({
+      content: "You have been summoned for jury, can you attend?",
+      components: [row],
+    });
+  }
+};
+const checkJuryRequest = (client) => {};
+
+export default {
+  createJuryRequest,
+};
