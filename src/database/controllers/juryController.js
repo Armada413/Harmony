@@ -120,6 +120,7 @@ const createReport = async (req, res) => {
 };
 
 // TODO: Need to make it so that it selects multiple users at random, not just 1
+// TODO: MAKE SURE THE USER REPORTING AND THE REPORTED USER IS NOT SELECTED FOR JURY
 const createJuryRequest = async (req, res) => {
   try {
     const { case_id } = req.body;
@@ -129,6 +130,7 @@ const createJuryRequest = async (req, res) => {
       [3, true, false]
     );
 
+    console.log(validJury.rows);
     if (validJury.rows.length > 0) {
       const randomIndex = Math.floor(Math.random() * validJury.rows.length);
       const juror = validJury.rows[randomIndex].discord_id;
@@ -160,7 +162,7 @@ const updateJuryAttendance = async (req, res) => {
   try {
     const { request_id, attendance } = req.body;
     const date = new Date().toISOString();
-    // If the value passed is valid, update the attendance of the user
+    // If the user is attending jury, update the attendance of the user
     if (attendance === true) {
       const updateJury = await db.query(
         "UPDATE jury_request SET attending = $1, finished = $2 WHERE id = $3 RETURNING case_id, user_discord;",
@@ -170,6 +172,7 @@ const updateJuryAttendance = async (req, res) => {
       const caseId = updateJury.rows[0].case_id;
       const userId = updateJury.rows[0].user_discord;
 
+      // Update the user table to show they are in a jury
       await db.query("UPDATE users SET served = $1 WHERE discord_id = $2", [
         null,
         userId,

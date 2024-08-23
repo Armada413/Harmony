@@ -42,6 +42,7 @@ CREATE TABLE jury_request (
     user_discord VARCHAR(20) REFERENCES users(discord_id) NOT NULL,
     case_id INTEGER REFERENCES cases(id) NOT NULL,
     backup INTEGER REFERENCES jury_request(id),
+    violation BOOLEAN DEFAULT false,
     started TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     finished TIMESTAMP
 );
