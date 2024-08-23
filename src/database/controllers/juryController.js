@@ -98,7 +98,6 @@ const createReport = async (req, res) => {
   } catch (error) {
     // If the user reports someone that is not from the database
     if (error.constraint === "reports_suspect_discord_fkey") {
-      console.log("I ran?");
       console.error("Suspect is not in the users database");
 
       res.status(400).json({
@@ -120,14 +119,14 @@ const createReport = async (req, res) => {
   }
 };
 
-// TODO: Need to make it so that it selects multiple users are random, not just 1
+// TODO: Need to make it so that it selects multiple users at random, not just 1
 const createJuryRequest = async (req, res) => {
   try {
     const { case_id } = req.body;
     // Get all users who are not in a case, is a collaborator, has not served yet and is not in a selection process
     const validJury = await db.query(
-      "SELECT discord_id FROM users WHERE reports < $1 AND collaborator = $2 AND served = $3 AND in_sample = $4;",
-      [3, true, false, false]
+      "SELECT discord_id FROM users WHERE reports < $1 AND collaborator = $2 AND served = $3;",
+      [3, true, false]
     );
 
     if (validJury.rows.length > 0) {
@@ -170,6 +169,11 @@ const updateJuryAttendance = async (req, res) => {
 
       const caseId = updateJury.rows[0].case_id;
       const userId = updateJury.rows[0].user_discord;
+
+      await db.query("UPDATE users SET served = $1 WHERE discord_id = $2", [
+        null,
+        userId,
+      ]);
 
       // Check if there is already a jury queue with the current case id
       const juryList = await db.query(

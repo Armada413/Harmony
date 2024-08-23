@@ -4,7 +4,6 @@ CREATE TABLE users (
     reports SMALLINT DEFAULT 0,
     collaborator BOOLEAN DEFAULT false,
     served BOOLEAN DEFAULT false,
-    in_sample BOOLEAN DEFAULT false
 );
 
 

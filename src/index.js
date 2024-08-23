@@ -13,8 +13,6 @@ import authRoutes from "./database/routes/authRoutes.js";
 import juryRoutes from "./database/routes/juryRoutes.js";
 import express from "express";
 
-console.log("hey");
-
 // ================================== DATABASE ==================================
 
 const app = express();
