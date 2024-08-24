@@ -49,7 +49,7 @@ export default {
         const juryChannel = message.client.channels.cache.get(channelId);
 
         if (juryChannel) {
-          // Forward the message sent by the user anonymously to the juryChannel
+          // Forward the message and files sent by the user anonymously to the juryChannel
           juryChannel.send({
             content: `‎ 
   

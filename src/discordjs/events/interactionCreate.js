@@ -122,40 +122,23 @@ export default {
 
             // updateJuryRequest(requestObject);
             const juryRequest = await testUpdateJuryRequest(requestObject);
-            const { caseId, juryPosition } = juryRequest.data;
+            const { caseId, juryPosition, caseChat, juryFull } =
+              juryRequest.data;
             const jurorProfile = juryPFP[`user_discord_${juryPosition}`];
 
-            // Check if the user already has a private thread in the current channel
-            const publicJuryThreadExists = juryChannel.threads.cache.find(
-              (thread) => thread.name == `#${caseId}`
-            );
-
-            // If the public jury channel for this case already exists, then only create private channel
-            if (publicJuryThreadExists) {
-              // Create private juror channel
-              const privateJurorThread = await juryChannel.threads.create({
-                name: `@${publicJuryThreadExists.id}.${interaction.user.id}.${jurorProfile}`,
-                autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
-                type: ChannelType.PrivateThread,
-                reason: "Private report thread created by the bot",
-              });
-
-              // Add user to public and private thread
-              await privateJurorThread.members.add(interaction.user.id);
-            } else {
-              // If the public thread does not exist, then create a public and private thread
-
-              // Create jury public channel
-              const publicJuryThread = await juryChannel.threads.create({
-                name: `#${caseId}`,
-                autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
-                type: ChannelType.PublicThread,
-                reason: "Private report thread created by the bot",
-              });
+            // ====================== New ======================
+            if (!juryFull) {
+              const caseChannelName = `🏛public_case_${caseChat}`;
+              const caseChannel = interaction.guild.channels.cache.find(
+                (ch) => ch.name === caseChannelName
+              );
+              const privateChannelId = "1276762740471365673";
+              const privateChannel =
+                interaction.guild.channels.cache.get(privateChannelId);
 
               // Create private juror channel
-              const privateJurorThread = await juryChannel.threads.create({
-                name: `@${publicJuryThread.id}.${interaction.user.id}.${jurorProfile}`,
+              const privateJurorThread = await privateChannel.threads.create({
+                name: `@${caseChannel.id}.${interaction.user.id}.${jurorProfile}`,
                 autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
                 type: ChannelType.PrivateThread,
                 reason: "Private report thread created by the bot",
@@ -163,13 +146,53 @@ export default {
 
               // Add user to threads
               await privateJurorThread.members.add(interaction.user.id);
+            } else if (juryFull) {
+              console.log("JURY IS FULL");
             }
 
-            // // TODO: Logic when jury is full
-            // if (testUpdateJuryRequest.data.juryFull) {
-            // }
-
             await interaction.channel.delete();
+
+            // ====================== Old ======================
+
+            // // Check if the user already has a private thread in the current channel
+            // const publicJuryThreadExists = juryChannel.threads.cache.find(
+            //   (thread) => thread.name == `#${caseId}`
+            // );
+
+            // // If the public jury channel for this case already exists, then only create private channel
+            // if (publicJuryThreadExists) {
+            //   // Create private juror channel
+            //   const privateJurorThread = await juryChannel.threads.create({
+            //     name: `@${publicJuryThreadExists.id}.${interaction.user.id}.${jurorProfile}`,
+            //     autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
+            //     type: ChannelType.PrivateThread,
+            //     reason: "Private report thread created by the bot",
+            //   });
+
+            //   // Add user to public and private thread
+            //   await privateJurorThread.members.add(interaction.user.id);
+            // } else {
+            //   // If the public thread does not exist, then create a public and private thread
+
+            //   // Create jury public channel
+            //   const publicJuryThread = await juryChannel.threads.create({
+            //     name: `#${caseId}`,
+            //     autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
+            //     type: ChannelType.PublicThread,
+            //     reason: "Private report thread created by the bot",
+            //   });
+
+            //   // Create private juror channel
+            //   const privateJurorThread = await juryChannel.threads.create({
+            //     name: `@${publicJuryThread.id}.${interaction.user.id}.${jurorProfile}`,
+            //     autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
+            //     type: ChannelType.PrivateThread,
+            //     reason: "Private report thread created by the bot",
+            //   });
+
+            //   // Add user to threads
+            //   await privateJurorThread.members.add(interaction.user.id);
+            // }
           } else {
             const requestObject = {
               request_id: requestId,

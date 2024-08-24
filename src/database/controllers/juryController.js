@@ -120,7 +120,6 @@ const createReport = async (req, res) => {
   }
 };
 
-// TODO: Need to make it so that it selects multiple users at random, not just 1
 // TODO: MAKE SURE THE USERS REPORTING AND THE REPORTED USER IS NOT SELECTED FOR JURY
 const createJuryRequest = async (req, res) => {
   try {
@@ -276,9 +275,24 @@ const testUpdateJuryAttendance = async (req, res) => {
       );
       // If there is no jury set up already, create one
       if (juryList.rows.length === 0) {
+        // Get a list of all the case chats that are available
+        const caseChats = await db.query(
+          "SELECT * FROM case_chats WHERE is_active = $1",
+          [false]
+        );
+
+        if (caseChats.rows.length === 0) {
+          throw new Error("juryController.js: All case chats are filled");
+        }
+
+        // Update the public case to active
         await db.query(
-          "INSERT INTO jury_test (case_id, user_discord_1) VALUES ($1, $2) RETURNING id",
-          [caseId, userId]
+          "UPDATE case_chats SET is_active = $1 WHERE public_case = $2",
+          [true, caseChats.rows[0].public_case]
+        );
+        await db.query(
+          "INSERT INTO jury_test (case_id, user_discord_1, case_chat) VALUES ($1, $2, $3) RETURNING id",
+          [caseId, userId, caseChats.rows[0].public_case]
         );
 
         // update the position of the jury member since we inserted the first member
@@ -289,6 +303,7 @@ const testUpdateJuryAttendance = async (req, res) => {
           juryFull: false,
           juryPosition: juryPosition,
           caseId: caseId,
+          caseChat: caseChats.rows[0].public_case,
         });
       } else {
         const juryRow = juryList.rows[0];
@@ -305,8 +320,8 @@ const testUpdateJuryAttendance = async (req, res) => {
 
         // Add the juror to the null column we found
         if (updateColumn) {
-          await db.query(
-            `UPDATE jury_test SET ${updateColumn} = $1 WHERE case_id = $2`,
+          const updateJury = await db.query(
+            `UPDATE jury_test SET ${updateColumn} = $1 WHERE case_id = $2 RETURNING case_chat`,
             [userId, caseId]
           );
           res.status(200).json({
@@ -314,6 +329,7 @@ const testUpdateJuryAttendance = async (req, res) => {
             juryFull: false,
             juryPosition: juryPosition,
             caseId: caseId,
+            caseChat: updateJury.rows[0].case_chat,
           });
         } else {
           // TODO: Notify that jury is full
