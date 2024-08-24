@@ -251,6 +251,8 @@ const testUpdateJuryAttendance = async (req, res) => {
   try {
     const { request_id, attendance } = req.body;
     const date = new Date().toISOString();
+    let juryPosition = 0;
+
     // If the user is attending jury, update the attendance of the user
     if (attendance === true) {
       const updateJury = await db.query(
@@ -278,12 +280,23 @@ const testUpdateJuryAttendance = async (req, res) => {
           "INSERT INTO jury_test (case_id, user_discord_1) VALUES ($1, $2) RETURNING id",
           [caseId, userId]
         );
+
+        // update the position of the jury member since we inserted the first member
+        juryPosition += 1;
+
+        res.status(200).json({
+          success: true,
+          juryFull: false,
+          juryPosition: juryPosition,
+          caseId: caseId,
+        });
       } else {
         const juryRow = juryList.rows[0];
 
         let updateColumn = null;
         // Check which column is null so we can insert the juror
         for (let i = 1; i <= 2; i++) {
+          juryPosition += 1;
           if (juryRow[`user_discord_${i}`] === null) {
             updateColumn = `user_discord_${i}`;
             break;
@@ -299,13 +312,15 @@ const testUpdateJuryAttendance = async (req, res) => {
           res.status(200).json({
             success: true,
             juryFull: false,
+            juryPosition: juryPosition,
             caseId: caseId,
           });
         } else {
-          // Notify that jury is full
+          // TODO: Notify that jury is full
           res.status(200).json({
             success: true,
             juryFull: true,
+            juryPosition: juryPosition,
             caseId: caseId,
           });
         }

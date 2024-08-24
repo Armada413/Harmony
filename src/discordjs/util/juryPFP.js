@@ -1,4 +1,4 @@
-export default anonymousProfile = {
+export default {
   user_discord_1: "🐘",
   user_discord_2: "🦍",
   user_discord_3: "🦬",

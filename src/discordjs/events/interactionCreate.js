@@ -1,6 +1,7 @@
 import { ChannelType, Events } from "discord.js";
 import { GUILD_ID } from "../../config.js";
 import { testUpdateJuryRequest, updateJuryRequest } from "../api/juryApi.js";
+import juryPFP from "../util/juryPFP.js";
 
 export default {
   name: Events.InteractionCreate,
@@ -8,7 +9,7 @@ export default {
    * @param {import('discord.js').Interaction} interaction
    */
   async execute(interaction) {
-    const juryDecisionChannel = "1276326024040419392";
+    const juryDecisionChannel = "1171766946392457216";
     try {
       // ====================== Handle Slash Commands ======================
       if (interaction.isChatInputCommand()) {
@@ -115,23 +116,25 @@ export default {
               request_id: requestId,
               attendance: true,
             };
-            const channel = interaction.channel;
+            const juryChannel = await interaction.client.channels.fetch(
+              juryDecisionChannel
+            );
 
             // updateJuryRequest(requestObject);
-            await testUpdateJuryRequest(requestObject);
-
-            const { caseId } = requestObject.data;
+            const juryRequest = await testUpdateJuryRequest(requestObject);
+            const { caseId, juryPosition } = juryRequest.data;
+            const jurorProfile = juryPFP[`user_discord_${juryPosition}`];
 
             // Check if the user already has a private thread in the current channel
-            const publicJuryThreadExists = channel.threads.cache.find(
+            const publicJuryThreadExists = juryChannel.threads.cache.find(
               (thread) => thread.name == `#${caseId}`
             );
 
             // If the public jury channel for this case already exists, then only create private channel
             if (publicJuryThreadExists) {
               // Create private juror channel
-              const privateJurorThread = await channel.threads.create({
-                name: `#${caseId}`,
+              const privateJurorThread = await juryChannel.threads.create({
+                name: `@${publicJuryThreadExists.id}.${interaction.user.id}.${jurorProfile}`,
                 autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
                 type: ChannelType.PrivateThread,
                 reason: "Private report thread created by the bot",
@@ -144,7 +147,7 @@ export default {
               // If the public thread does not exist, then create a public and private thread
 
               // Create jury public channel
-              const publicJuryThread = await channel.threads.create({
+              const publicJuryThread = await juryChannel.threads.create({
                 name: `#${caseId}`,
                 autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
                 type: ChannelType.PrivateThread,
@@ -152,21 +155,21 @@ export default {
               });
 
               // Create private juror channel
-              const privateJurorThread = await channel.threads.create({
-                name: `#${caseId}`,
+              const privateJurorThread = await juryChannel.threads.create({
+                name: `@${publicJuryThread.id}.${interaction.user.id}.${jurorProfile}`,
                 autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
                 type: ChannelType.PrivateThread,
                 reason: "Private report thread created by the bot",
               });
 
-              // Add user to thread
-              await publicJuryThread.members.add(interaction.user.id);
+              // Add user to threads
               await privateJurorThread.members.add(interaction.user.id);
+              await publicJuryThread.members.add(interaction.user.id);
             }
 
-            // TODO: Logic when jury is full
-            if (testUpdateJuryRequest.data.juryFull) {
-            }
+            // // TODO: Logic when jury is full
+            // if (testUpdateJuryRequest.data.juryFull) {
+            // }
 
             await interaction.channel.delete();
           } else {

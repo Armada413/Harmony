@@ -6,7 +6,7 @@ export default {
    * @param {Message} message
    */
   async execute(message) {
-    // Check if the message came from the jury hat
+    // Check if the message came from the jury chat
     if (message.channel.name.startsWith("@")) {
       // Ensure the message is not from a bot
       if (message.author.bot) return;
