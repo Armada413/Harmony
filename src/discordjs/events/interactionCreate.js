@@ -142,7 +142,6 @@ export default {
 
               // Add user to public and private thread
               await privateJurorThread.members.add(interaction.user.id);
-              await publicJuryThreadExists.members.add(interaction.user.id);
             } else {
               // If the public thread does not exist, then create a public and private thread
 
@@ -150,7 +149,7 @@ export default {
               const publicJuryThread = await juryChannel.threads.create({
                 name: `#${caseId}`,
                 autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
-                type: ChannelType.PrivateThread,
+                type: ChannelType.PublicThread,
                 reason: "Private report thread created by the bot",
               });
 
@@ -164,7 +163,6 @@ export default {
 
               // Add user to threads
               await privateJurorThread.members.add(interaction.user.id);
-              await publicJuryThread.members.add(interaction.user.id);
             }
 
             // // TODO: Logic when jury is full

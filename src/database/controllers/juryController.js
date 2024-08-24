@@ -253,8 +253,6 @@ const testUpdateJuryAttendance = async (req, res) => {
     const date = new Date().toISOString();
     let juryPosition = 0;
 
-    console.log("request id", request_id);
-
     // If the user is attending jury, update the attendance of the user
     if (attendance === true) {
       const updateJury = await db.query(
@@ -265,7 +263,6 @@ const testUpdateJuryAttendance = async (req, res) => {
       const caseId = updateJury.rows[0].case_id;
       const userId = updateJury.rows[0].user_discord;
 
-      console.log("userID:", userId);
       // Update the user table to show they are in a jury
       await db.query("UPDATE users SET served = $1 WHERE discord_id = $2", [
         null,

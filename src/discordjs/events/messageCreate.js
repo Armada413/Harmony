@@ -50,11 +50,14 @@ export default {
 
         if (juryChannel) {
           // Forward the message sent by the user anonymously to the juryChannel
-          juryChannel.send(`‎ 
+          juryChannel.send({
+            content: `‎ 
   
   ${userNumber} : ${userId} - 
   
-  ${message.content}`);
+  ${message.content}`,
+            files: message.attachments.map((attachment) => attachment.url), // Map the attachments to their URLs
+          });
         } else {
           console.error("messageCreate.js: Failed at fetching channelId");
         }
