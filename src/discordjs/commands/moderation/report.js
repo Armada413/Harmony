@@ -145,18 +145,18 @@ export default {
           const channelId = "1171766946392457216";
           const channel = await client.channels.fetch(channelId);
 
-          for (const user of juryRequest.data.juror) {
+          for (const request of juryRequest.data.requestId) {
             // Create private thread of juror
             const thread = await channel.threads.create({
               // Make the name of the channel the db table request ID (for future retrieval)
-              name: juryRequest.data.requestId,
+              name: request.id,
               autoArchiveDuration: 60,
               type: ChannelType.PrivateThread,
               reason: "Private thread for jury request",
             });
 
             // Set permissions so only the juror can view and message in the thread
-            await thread.members.add(user.discord_id);
+            await thread.members.add(request.user_discord);
 
             // Set up buttons
             const yesButton = new ButtonBuilder()
