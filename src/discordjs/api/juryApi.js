@@ -12,3 +12,7 @@ export async function createJuryRequest(case_id) {
 export async function updateJuryRequest(update) {
   return await axios.patch(`${juryBaseUrl}/update_request`, update);
 }
+
+export async function testUpdateJuryRequest(update) {
+  return await axios.patch(`${juryBaseUrl}/test_update_request`, update);
+}

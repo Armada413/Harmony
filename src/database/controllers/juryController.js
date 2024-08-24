@@ -1,3 +1,4 @@
+import util from "../../discordjs/util/util.js";
 import db from "../db.js";
 
 const template = async (req, res) => {
@@ -120,7 +121,7 @@ const createReport = async (req, res) => {
 };
 
 // TODO: Need to make it so that it selects multiple users at random, not just 1
-// TODO: MAKE SURE THE USER REPORTING AND THE REPORTED USER IS NOT SELECTED FOR JURY
+// TODO: MAKE SURE THE USERS REPORTING AND THE REPORTED USER IS NOT SELECTED FOR JURY
 const createJuryRequest = async (req, res) => {
   try {
     const { case_id } = req.body;
@@ -130,18 +131,29 @@ const createJuryRequest = async (req, res) => {
       [3, true, false]
     );
 
-    console.log(validJury.rows);
+    const testCount = 2;
     if (validJury.rows.length > 0) {
       const randomIndex = Math.floor(Math.random() * validJury.rows.length);
       const juror = validJury.rows[randomIndex].discord_id;
+      let randomJurorsValues = "";
+
+      // Randomized the array and select the first X users
+      const randomizedJuryArray = util
+        .fisherYatesShuffle(validJury.rows)
+        .slice(0, testCount);
+      // Organize the values to insert into the request
+      randomizedJuryArray.forEach(
+        (user) => (randomJurorsValues += ` (${user.discord_id}, ${case_id}),`)
+      );
+      // remove the last comma
+      randomJurorsValues = randomJurorsValues.slice(0, -1);
 
       const createRequest = await db.query(
-        "INSERT INTO jury_request (user_discord, case_id) VALUES ($1, $2) RETURNING id",
-        [juror, case_id]
+        `INSERT INTO jury_request (user_discord, case_id) VALUES ${randomJurorsValues} RETURNING id`
       );
       res.status(200).json({
         success: true,
-        juror: juror,
+        juror: randomizedJuryArray,
         requestId: createRequest.rows[0].id,
       });
     } else {
@@ -235,8 +247,95 @@ const updateJuryAttendance = async (req, res) => {
   }
 };
 
+const testUpdateJuryAttendance = async (req, res) => {
+  try {
+    const { request_id, attendance } = req.body;
+    const date = new Date().toISOString();
+    // If the user is attending jury, update the attendance of the user
+    if (attendance === true) {
+      const updateJury = await db.query(
+        "UPDATE jury_request SET attending = $1, finished = $2 WHERE id = $3 RETURNING case_id, user_discord;",
+        [attendance, date, request_id]
+      );
+
+      const caseId = updateJury.rows[0].case_id;
+      const userId = updateJury.rows[0].user_discord;
+
+      // Update the user table to show they are in a jury
+      await db.query("UPDATE users SET served = $1 WHERE discord_id = $2", [
+        null,
+        userId,
+      ]);
+
+      // Check if there is already a jury queue with the current case id
+      const juryList = await db.query(
+        "SELECT * FROM jury_test WHERE case_id = $1",
+        [caseId]
+      );
+      // If there is no jury set up already, create one
+      if (juryList.rows.length === 0) {
+        await db.query(
+          "INSERT INTO jury_test (case_id, user_discord_1) VALUES ($1, $2) RETURNING id",
+          [caseId, userId]
+        );
+      } else {
+        const juryRow = juryList.rows[0];
+
+        let updateColumn = null;
+        // Check which column is null so we can insert the juror
+        for (let i = 1; i <= 2; i++) {
+          if (juryRow[`user_discord_${i}`] === null) {
+            updateColumn = `user_discord_${i}`;
+            break;
+          }
+        }
+
+        // Add the juror to the null column we found
+        if (updateColumn) {
+          await db.query(
+            `UPDATE jury_test SET ${updateColumn} = $1 WHERE case_id = $2`,
+            [userId, caseId]
+          );
+          res.status(200).json({
+            success: true,
+            juryFull: false,
+            caseId: caseId,
+          });
+        } else {
+          // Notify that jury is full
+          res.status(200).json({
+            success: true,
+            juryFull: true,
+            caseId: caseId,
+          });
+        }
+      }
+    } else if (attendance === false) {
+      await db.query(
+        "UPDATE jury_request SET attending = $1, finished = $2 WHERE id = $3;",
+        [attendance, date, request_id]
+      );
+
+      res.status(200).json({
+        success: true,
+      });
+    } else {
+      throw new Error(
+        "juryController.js: The value passed as attendance in req.body is not valid"
+      );
+    }
+  } catch (error) {
+    console.error(error.message);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export default {
   createJuryRequest,
   createReport,
   updateJuryAttendance,
+  testUpdateJuryAttendance,
 };

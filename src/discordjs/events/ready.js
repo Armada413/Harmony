@@ -1,5 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder } from "@discordjs/builders";
 import { ButtonStyle, Client, Events } from "discord.js";
+import util from "../util/util.js";
 
 export default {
   name: Events.ClientReady,

@@ -1,6 +1,6 @@
 import { ChannelType, Events } from "discord.js";
 import { GUILD_ID } from "../../config.js";
-import { updateJuryRequest } from "../api/juryApi.js";
+import { testUpdateJuryRequest, updateJuryRequest } from "../api/juryApi.js";
 
 export default {
   name: Events.InteractionCreate,
@@ -8,6 +8,7 @@ export default {
    * @param {import('discord.js').Interaction} interaction
    */
   async execute(interaction) {
+    const juryDecisionChannel = "1276326024040419392";
     try {
       // ====================== Handle Slash Commands ======================
       if (interaction.isChatInputCommand()) {
@@ -83,7 +84,7 @@ export default {
                 reason: "Private report thread created by the bot",
               });
 
-              // Set permissions so only the interacting user can view and message in the thread
+              // Add user to thread
               await thread.members.add(interaction.user.id);
 
               // Send a confirmation message in the thread
@@ -102,7 +103,9 @@ export default {
               ephemeral: true,
             });
           }
-        } else if (
+        }
+        // Is a jury request
+        else if (
           interaction.customId === "juryYes" ||
           interaction.customId === "juryNo"
         ) {
@@ -112,13 +115,58 @@ export default {
               request_id: requestId,
               attendance: true,
             };
+            const channel = interaction.channel;
 
-            updateJuryRequest(requestObject);
+            // updateJuryRequest(requestObject);
+            await testUpdateJuryRequest(requestObject);
 
-            await interaction.reply({
-              content: "Your attendance has been confirmed.",
-              ephemeral: true,
-            });
+            const { caseId } = requestObject.data;
+
+            // Check if the user already has a private thread in the current channel
+            const publicJuryThreadExists = channel.threads.cache.find(
+              (thread) => thread.name == `#${caseId}`
+            );
+
+            // If the public jury channel for this case already exists, then only create private channel
+            if (publicJuryThreadExists) {
+              // Create private juror channel
+              const privateJurorThread = await channel.threads.create({
+                name: `#${caseId}`,
+                autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
+                type: ChannelType.PrivateThread,
+                reason: "Private report thread created by the bot",
+              });
+
+              // Add user to public and private thread
+              await privateJurorThread.members.add(interaction.user.id);
+              await publicJuryThreadExists.members.add(interaction.user.id);
+            } else {
+              // If the public thread does not exist, then create a public and private thread
+
+              // Create jury public channel
+              const publicJuryThread = await channel.threads.create({
+                name: `#${caseId}`,
+                autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
+                type: ChannelType.PrivateThread,
+                reason: "Private report thread created by the bot",
+              });
+
+              // Create private juror channel
+              const privateJurorThread = await channel.threads.create({
+                name: `#${caseId}`,
+                autoArchiveDuration: 60, // Auto-archive after 60 minutes of inactivity
+                type: ChannelType.PrivateThread,
+                reason: "Private report thread created by the bot",
+              });
+
+              // Add user to thread
+              await publicJuryThread.members.add(interaction.user.id);
+              await privateJurorThread.members.add(interaction.user.id);
+            }
+
+            // TODO: Logic when jury is full
+            if (testUpdateJuryRequest.data.juryFull) {
+            }
 
             await interaction.channel.delete();
           } else {
@@ -127,12 +175,8 @@ export default {
               attendance: false,
             };
 
-            updateJuryRequest(requestObject);
-
-            await interaction.reply({
-              content: "Your attendance has been declined.",
-              ephemeral: true,
-            });
+            // updateJuryRequest(requestObject);
+            await testUpdateJuryRequest(requestObject);
 
             await interaction.channel.delete();
           }

@@ -144,35 +144,41 @@ export default {
         if (juryRequest.data.juror) {
           const channelId = "1171766946392457216";
           const channel = await client.channels.fetch(channelId);
-          // Create private thread of juror
-          const thread = await channel.threads.create({
-            // Make the name of the channel the db table request ID (for future retrieval)
-            name: juryRequest.data.requestId,
-            autoArchiveDuration: 60,
-            type: ChannelType.PrivateThread,
-            reason: "Private thread for jury request",
-          });
 
-          // Set permissions so only the juror can view and message in the thread
-          await thread.members.add(juryRequest.data.juror);
+          for (const user of juryRequest.data.juror) {
+            // Create private thread of juror
+            const thread = await channel.threads.create({
+              // Make the name of the channel the db table request ID (for future retrieval)
+              name: juryRequest.data.requestId,
+              autoArchiveDuration: 60,
+              type: ChannelType.PrivateThread,
+              reason: "Private thread for jury request",
+            });
 
-          // Set up buttons
-          const yesButton = new ButtonBuilder()
-            .setCustomId("juryYes")
-            .setLabel("Yes")
-            .setStyle(ButtonStyle.Success);
+            // Set permissions so only the juror can view and message in the thread
+            await thread.members.add(user.discord_id);
 
-          const noButton = new ButtonBuilder()
-            .setCustomId("juryNo")
-            .setLabel("No")
-            .setStyle(ButtonStyle.Danger);
-          const row = new ActionRowBuilder().addComponents(yesButton, noButton);
+            // Set up buttons
+            const yesButton = new ButtonBuilder()
+              .setCustomId("juryYes")
+              .setLabel("Yes")
+              .setStyle(ButtonStyle.Success);
 
-          // Send a confirmation message in the thread
-          await thread.send({
-            content: "You have been summoned for jury, may you attend?",
-            components: [row],
-          });
+            const noButton = new ButtonBuilder()
+              .setCustomId("juryNo")
+              .setLabel("No")
+              .setStyle(ButtonStyle.Danger);
+            const row = new ActionRowBuilder().addComponents(
+              yesButton,
+              noButton
+            );
+
+            // Send a confirmation message in the thread
+            await thread.send({
+              content: "You have been summoned for jury, may you attend?",
+              components: [row],
+            });
+          }
         }
       }
 

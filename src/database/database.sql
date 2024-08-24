@@ -65,5 +65,14 @@ CREATE TABLE jury_12 (
     started TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     finished TIMESTAMP
 );
+
+CREATE TABLE jury_test (
+    id SERIAL PRIMARY KEY,
+    case_id INTEGER REFERENCES cases(id) NOT NULL,
+    user_discord_1 VARCHAR(20) REFERENCES users(discord_id),
+    user_discord_2 VARCHAR(20) REFERENCES users(discord_id),
+    started TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    finished TIMESTAMP
+);
 -- ========================
 INSERT INTO table (row_name) VALUES ('value');
